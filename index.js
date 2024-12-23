@@ -32,14 +32,14 @@ app.post("/api/shorturl", async (req, res) => {
 
   // URL validation
   if (!isValidUrl(urlString)) {
-    return res.status(400).json({ error: "invalid url" });
+    return res.json({ error: "invalid url" });
   }
 
   const hostname = urlparser.parse(urlString).hostname;
 
   dns.lookup(hostname, async (err, validAddress) => {
     if (err || !validAddress) {
-      return res.status(400).json({ error: "invalid url" });
+      return res.json({ error: "invalid url" });
     }
 
     try {
