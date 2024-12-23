@@ -20,7 +20,6 @@ app.get("/", (req, res) => {
   res.sendFile(process.cwd() + "/views/index.html");
 });
 
-// URL geçerliliğini kontrol etmek için basit bir regex
 const isValidUrl = (url) => {
   const regex = /^(http|https):\/\/[^\s/$.?#].[^\s]*$/;
   return regex.test(url);
