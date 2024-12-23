@@ -4,7 +4,6 @@ const cors = require("cors");
 const urlparser = require("url");
 const { MongoClient } = require("mongodb");
 const dns = require("dns");
-const validUrl = require("valid-url");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -21,12 +20,18 @@ app.get("/", (req, res) => {
   res.sendFile(process.cwd() + "/views/index.html");
 });
 
-// First API Endpoint
+// URL geçerliliğini kontrol etmek için basit bir regex
+const isValidUrl = (url) => {
+  const regex = /^(http|https):\/\/[^\s/$.?#].[^\s]*$/;
+  return regex.test(url);
+};
+
+// first API Endpoint
 app.post("/api/shorturl", async (req, res) => {
   const urlString = req.body.url;
 
   // URL validation
-  if (!validUrl.isUri(urlString)) {
+  if (!isValidUrl(urlString)) {
     return res.status(400).json({ error: "invalid url" });
   }
 
