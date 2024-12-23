@@ -1,24 +1,75 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const app = express();
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const urlparser = require("url");
+const { MongoClient } = require("mongodb");
+const dns = require("dns");
+const validUrl = require("valid-url");
 
-// Basic Configuration
+const app = express();
 const port = process.env.PORT || 3000;
+const cdb = new MongoClient(process.env.URI);
+const db = cdb.db("url_service");
+const storeUrls = db.collection("urls");
 
 app.use(cors());
+app.use("/public", express.static(`${process.cwd()}/public`));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-app.use('/public', express.static(`${process.cwd()}/public`));
-
-app.get('/', function(req, res) {
-  res.sendFile(process.cwd() + '/views/index.html');
+app.get("/", (req, res) => {
+  res.sendFile(process.cwd() + "/views/index.html");
 });
 
-// Your first API endpoint
-app.get('/api/hello', function(req, res) {
-  res.json({ greeting: 'hello API' });
+// First API Endpoint
+app.post("/api/shorturl", async (req, res) => {
+  const urlString = req.body.url;
+
+  // URL validation
+  if (!validUrl.isUri(urlString)) {
+    return res.status(400).json({ error: "Invalid URL" });
+  }
+
+  const hostname = urlparser.parse(urlString).hostname;
+
+  dns.lookup(hostname, async (err, validAddress) => {
+    if (err || !validAddress) {
+      return res.status(400).json({ error: "Invalid URL" });
+    }
+
+    try {
+      const countUrls = await storeUrls.countDocuments({});
+      const urlStore = {
+        urlString,
+        short_url: countUrls,
+      };
+      await storeUrls.insertOne(urlStore);
+      res.json({
+        original_url: urlString,
+        short_url: countUrls,
+      });
+    } catch (error) {
+      console.error("Database error:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
 });
 
-app.listen(port, function() {
+app.get("/api/shorturl/:short_url", async (req, res) => {
+  const shorturl = req.params.short_url;
+
+  try {
+    const urlStore = await storeUrls.findOne({ short_url: +shorturl });
+    if (!urlStore) {
+      return res.status(404).json({ error: "Short URL not found" });
+    }
+    res.redirect(urlStore.urlString);
+  } catch (error) {
+    console.error("Database error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });

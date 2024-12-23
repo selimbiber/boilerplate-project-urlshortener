@@ -1,0 +1,6 @@
+POST https://3000-freecodecam-boilerplate-kfuh9m6sf4r.ws-us117.gitpod.io/api/shorturl
+Content-Type: application/json
+
+{
+    "url": "https://www.freecodecamp.org"
+}
